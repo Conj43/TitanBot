@@ -48,6 +48,7 @@ streamlit run main.py
 
 ## Usage
 You'll need to upload a database in order to chat with TitanBot. You may use a SQLite database, or an API link to a database.
+Databases are opened in Read-Only mode, so no need to worry about data corruption.
 
 
 
