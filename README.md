@@ -53,17 +53,21 @@ Databases are opened in Read-Only mode, so no need to worry about data corruptio
 
 
 
+
+
+
+
 ## Demonstration
 
 Querying for accidents by each day of the week:<br>
-[![Watch the video](https://img.youtube.com/vi/Fg-2ccIZbTQ/0.jpg)](https://www.youtube.com/watch?v=Fg-2ccIZbTQ)
+https://github.com/user-attachments/assets/4a7c7bf3-8db1-4642-bb8a-4976610063df
 <br><br>
 Querying for number of occurences of each light condition:<br>
-[![Watch the video](https://img.youtube.com/vi/Fg-2ccIZbTQ/0.jpg)](https://youtu.be/6Z1PFLRdDqQ)
+https://github.com/user-attachments/assets/d2a49038-47e1-4c9a-81b1-1c89282050f2
+
 
 
 
 ## Contact
-
 
 
