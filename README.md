@@ -68,17 +68,22 @@ https://github.com/user-attachments/assets/e9a02aba-3f80-42a2-b2d1-17ce1aa99b41
 #### Query Travel Time Index 
 https://github.com/user-attachments/assets/8e263773-01d6-45d9-9bff-3938ca6ed70f
 
-#### Query Congestion level and Road works
-##### Part1
+#### Query Congestion Level and Road Works
+##### Part 1
 https://github.com/user-attachments/assets/997f9bbf-e70b-4085-9b2b-183ff64e045f
-##### Part2
+##### Part 2
 https://github.com/user-attachments/assets/a04a1335-0bb9-4314-8335-18beed08fae0
 
-#### Query Congestion map
+#### Query Congestion Map
 https://github.com/user-attachments/assets/7deb0020-24a4-4cf7-9893-d1a4be57d15a
 
 
 
 ## Contact
+If you have any questions, suggestions, or feedback, please feel free to reach out to us via one of our emails. We would love to hear from you!
 
+- Neema Jakisa Owor: nodyv@missouri.edu
+- Connor Joyce: cpjtdx@missouri.edu
+
+We welcome and encourage contributions from the community! If you have ideas on how to expand or improve this project, please fork the repository and submit a pull request. Let's make this project even better together.
 
