@@ -294,10 +294,69 @@ def create_tools(db_path):
             so you will generate the correct query and input it into this tool."
     )
 
+    def roadwork_search (query0, query1):
+        try:
 
+            df = pd.read_sql_query(query1, conn)
+            result_df_edit = prep_data(df)
+            total_df = calculate_arterial(result_df_edit)
+            
+            # Calculate congestion level for each segment
+            congestion_df = total_df.groupby(['tmc', 'link', 'start_lat', 'end_lat', 'start_long', 'end_long']).agg({
+                "congestion_level": "first"
+            }).reset_index()
+
+
+            acc_df = pd.read_sql_query(query0, conn)
+            acc_df['dt'] = pd.to_datetime(acc_df['pub_millis'])
+            acc_df['year'] = acc_df['dt'].dt.year
+
+
+            # Function to check if an accident is within a certain radius
+            def is_within_range(row, accident_data, radius=1.0):
+                start_point = (row['start_lat'], row['start_long'])
+                end_point = (row['end_lat'], row['end_long'])
+                
+                for _, accident in accident_data.iterrows():
+                    accident_point = (accident['latitude'], accident['longitude'])
+                    if geodesic(start_point, accident_point).miles <= radius or geodesic(end_point, accident_point).miles <= radius:
+                        return True
+                return False
+
+            # Function to get nearby accident info
+            def get_nearby_info(row, accident_data, radius=1.0):
+                start_point = (row['start_lat'], row['start_long'])
+                end_point = (row['end_lat'], row['end_long'])
+                
+                nearby_info = []
+                for _, accident in accident_data.iterrows():
+                    accident_point = (accident['latitude'], accident['longitude'])
+                    if geodesic(start_point, accident_point).miles <= radius or geodesic(end_point, accident_point).miles <= radius:
+                        nearby_info.append(accident['year'])
+                return nearby_info
+
+            # Apply functions to dataframe
+            congestion_df['roadwork_nearby'] = congestion_df.apply(is_within_range, axis=1, accident_data=acc_df)
+            congestion_df['years'] = congestion_df.apply(lambda row: ', '.join(map(str, get_nearby_info(row, acc_df))) if get_nearby_info(row, acc_df) else 'None', axis=1)
+
+            congestion_df['years'] = congestion_df['years'].apply(lambda x: x.split(',')[0].strip())
+
+            return "Successful Query. Here is the congestion level",congestion_df
+        
+        except sqlite3.Error as e:
+            return f"SQL query failed with error: {e} Please use sql_db_schema and then rewrite the query and try again using roadwork_search_tool!"
+        except Exception as e:
+            return f"An unexpected error occurred: {e} Please use sql_db_schema and then rewrite the query and try again using roadwork_search_tool!"
+
+    roadwork_search_tool = StructuredTool.from_function(
+        func=roadwork_search,
+        name="roadwork_search_tool",
+        description="Use this tool to determine if there was roadwork in a given year. The user will ask you for a determine the roadwork, \
+            so you will generate the correct query and input it into this tool."
+    )
 
     # create our list of tools
-    tools = [map_tool, graph_tool, speed_index_tool, tti_tool, congestion_map_tool, congestion_level_tool]
+    tools = [map_tool, graph_tool, speed_index_tool, tti_tool, congestion_map_tool, congestion_level_tool, roadwork_search_tool]
     
     # return list of tools that agent can use
     return tools
