@@ -25,17 +25,23 @@ example_selector = SemanticSimilarityExampleSelector.from_examples(
     input_keys=["input"],
 )
 
-# combines system prefix and exmaples to put them into one
-few_shot_prompt = FewShotPromptTemplate(
-    example_selector=example_selector,
-    example_prompt=PromptTemplate.from_template(
-        "User input: {input}\nSQL query: {query}"
-    ),
-    input_variables=["input", "dialect",  "chat_history"],
-    prefix=SYSTEM_PREFIX,
-    suffix="",
+
+example_prompt_template = PromptTemplate.from_template(
+    """
+User input: {input}
+SQL queries: 
+{query}
+"""
 )
 
+# Create the few-shot prompt with the updated template
+few_shot_prompt = FewShotPromptTemplate(
+    example_selector=example_selector,
+    example_prompt=example_prompt_template,
+    input_variables=["input", "dialect", "chat_history"],
+    prefix=SYSTEM_PREFIX,
+    suffix=""
+) 
 # full prompt adds all our prompt pieces into one big prompt to pass to llm
 full_prompt = ChatPromptTemplate.from_messages(
     [
