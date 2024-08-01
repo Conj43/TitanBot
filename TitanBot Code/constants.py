@@ -83,9 +83,15 @@ EXAMPLES = [
         "query": "SELECT * FROM traffic_data WHERE dt LIKE '2022%'"
     },
     {
-        "input": "Calculate the congestion level for link 50210 in 2023",
-        "query": "SELECT * FROM traffic_data WHERE link = '50210' AND dt LIKE '2023%'"
+        "input": "Calculate the congestion level for link 4610 in 2023",
+        "query": "SELECT * FROM traffic_data WHERE link = '4610' AND dt LIKE '2023%'"
     },
+
+      {
+        "input": "Are there any roadworks that attest to the change in congestion level in 2022 on link 4610?",
+        "query": "SELECT * FROM accident_data WHERE pub_millis LIKE '2022%' AND event_class = 'ROADWORK'; SELECT * FROM traffic_data WHERE link = '4610' AND dt LIKE '2022%';"
+    },
+    
 
 
 ]
