@@ -65,6 +65,16 @@ https://github.com/user-attachments/assets/85f463de-c845-4940-bb90-acabd096f3a2
 #### Query Accident Distribution of Days of the Week
 https://github.com/user-attachments/assets/e9a02aba-3f80-42a2-b2d1-17ce1aa99b41
 
+#### Query Travel Time Index 
+https://github.com/user-attachments/assets/8e263773-01d6-45d9-9bff-3938ca6ed70f
+
+#### Query Congestion level and Road works
+##### Part1
+https://github.com/user-attachments/assets/997f9bbf-e70b-4085-9b2b-183ff64e045f
+##### Part2
+https://github.com/user-attachments/assets/a04a1335-0bb9-4314-8335-18beed08fae0
+
+
 
 
 ## Contact
