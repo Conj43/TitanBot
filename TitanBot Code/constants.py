@@ -120,6 +120,8 @@ NOTES:
 - If you are asked to graph something, use the query results to input information into the graph tool.
 - When you graph data, give a high level interpretation of the graph, as if you were a transportation engineer. Use your knowledge to explain why different trends occur.
 - NEVER use the map tool and graph tool at the same time. Only use what is asked of you.
+- ffs is free flow speed
+- Lower travel index because faster travel time
 - When asked to calculate speed index, generate the query and input it into the speed_index_tool.
 - When asked to calculate time travel index, generate the query and input it into the tti_tool.
 - An increase in speed index means higher congestion. A decrease in speed index means lower congestion.
