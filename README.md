@@ -43,10 +43,16 @@ export OPENAI_API_KEY='your-openai-api-key'
 ```
 
 ## Deactivate and Reactivate your Virtual Environment
-'''
+#### Windows
+```
+deactivate
+venv\Scripts\activate
+```
+#### macOS/Linux
+```
 deactivate
 source venv/bin/activate
-'''
+```
 
 ## Running the Application
 ```
