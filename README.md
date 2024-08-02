@@ -12,6 +12,7 @@ Make sure you have:
 ```
 git clone https://github.com/Conj43/TitanBot.git
 cd TitanBot
+cd 'TitanBot Code'
 ```
 ## Create and Activate a Virtual Environment
 
