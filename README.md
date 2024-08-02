@@ -11,8 +11,7 @@ Make sure you have:
 ## Clone Repository
 ```
 git clone https://github.com/Conj43/TitanBot.git
-cd TitanBot
-cd 'TitanBot Code'
+cd TitanBot/'TitanBot Code'
 ```
 ## Create and Activate a Virtual Environment
 
@@ -32,6 +31,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+
 ## Configure OpenAI API Key
 #### Windows
 ```
@@ -41,6 +41,12 @@ set OPENAI_API_KEY='your-openai-api-key'
 ```
 export OPENAI_API_KEY='your-openai-api-key'
 ```
+
+## Deactivate and Reactivate your Virtual Environment
+'''
+deactivate
+source venv/bin/activate
+'''
 
 ## Running the Application
 ```
