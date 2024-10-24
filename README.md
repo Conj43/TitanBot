@@ -1,12 +1,14 @@
 # TitanBot
-TitanBot is a Python chatbot that leverages the OpenAI API to query ChatGPT and interact with your transportation database. It allows users to ask natural language questions and receive insightful responses and interactive visuals, making database interactions more intuitive and efficient. 
+TitanBot is a Python chatbot that leverages the OpenAI API to query ChatGPT and interact with your transportation database. It allows users to ask natural language questions, query SQL databases, and receive insightful responses with interactive visuals. TitanBot can also dynamically generate and execute Python code, enabling real-time data analysis and customized outputs based on user queries.
 
 ## Installation
 Follow these steps to install and configure TitanBot locally:
 
 Make sure you have:
-- Python 3.7 or later
-- OpenAI API key
+- Python 3.7 or later (https://www.python.org/downloads/)
+- OpenAI API key (https://platform.openai.com/api-keys)
+- Docker Installed and Running (https://docs.docker.com/engine/install/)
+
 
 ## Clone Repository
 ```
@@ -60,8 +62,8 @@ streamlit run main.py
 ```
 
 ## Usage
-You'll need to upload a database in order to chat with TitanBot. You may use a SQLite database, or an API link to a database.
-Databases are opened in Read-Only mode, so no need to worry about data corruption.
+You'll need to upload a database in order to chat with TitanBot. You may use a SQLite database, one or multiple CSV files, or an API link to a database.
+Databases are opened in Read-Only mode, and CSV files and API links are queried by creating temporary SQLite databases, so no need to worry about data corruption.
 
 
 
