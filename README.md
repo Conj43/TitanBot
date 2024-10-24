@@ -60,6 +60,10 @@ source venv/bin/activate
 ```
 streamlit run main.py
 ```
+### For Files Over 200MB (Example is for 400MB max but it can be increased)
+```
+streamlit run main.py --server.maxUploadSize 400
+```
 
 ## Usage
 You'll need to upload a database in order to chat with TitanBot. You may use a SQLite database, one or multiple CSV files, or an API link to a database.
