@@ -79,8 +79,10 @@ https://github.com/user-attachments/assets/c53f170b-acfb-441a-b7ac-178ab533c6c0
 
 
 
-#### Query Accident Distribution of Days of the Week
-https://github.com/user-attachments/assets/e9a02aba-3f80-42a2-b2d1-17ce1aa99b41
+#### Speed Index for One Year Demo
+https://github.com/user-attachments/assets/38e6dc77-753e-4957-b88b-1d7939f43a21
+
+
 
 #### Query Travel Time Index 
 https://github.com/user-attachments/assets/8e263773-01d6-45d9-9bff-3938ca6ed70f
