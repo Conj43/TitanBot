@@ -1,404 +1,379 @@
 # main file is main.py
 
 # imports
-import sqlite3
-from typing import List, Any, Optional, Tuple
-import pandas as pd
+import os, io, csv,ast
+from typing import List
 import streamlit as st
-import folium
-from streamlit_folium import folium_static
-import osmnx as ox
-import geopandas as gpd
-from shapely.geometry import LineString
-import sklearn
-from geopy.distance import geodesic
-from io import StringIO
-
+# from tavily import TavilyClient
+from PIL import Image
+from io import BytesIO
 
 
 # langchain imports
+from langchain_community.agent_toolkits import SQLDatabaseToolkit
+from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_openai import ChatOpenAI
-from langchain_core.pydantic_v1 import BaseModel, Field
-from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
-from langchain.agents.agent_toolkits import create_retriever_tool
+from langchain_core.pydantic_v1 import BaseModel
 from langchain.tools import StructuredTool
+from langchain_core.messages import SystemMessage, HumanMessage
 
 # imports from other files
-from calculations import prep_data, arterial_spped_index, calculate_arterial
+from sandbox import AICodeSandbox
+
+
+# tavily used to help generate reports
+# tavily_api_key = os.getenv('TAVILY_API_KEY')
+
+
+# function to keep file names unique
+def get_unique_filename(filename):
+    base_filename, file_extension = filename.rsplit('.', 1) if '.' in filename else (filename, '')
+    counter = 1
+
+    # modify filename until it is unique
+    while filename in st.session_state.used_filenames:
+        filename = f"{base_filename}_{counter}.{file_extension}" if file_extension else f"{base_filename}_{counter}"
+        counter += 1
+    
+    # add the unique filename to the set
+    st.session_state.used_filenames.add(filename)
+    return filename
+
+
 
 
 # function to initialize tools the agent will use
 def create_tools(db_path):
-    conn = sqlite3.connect(db_path) # use db path parameter to crate connection to the selected database
-    
 
-    # function to display points to a map using streamlit's st.map
-    def display_map(input):
-        map_llm = create_map_llm()
-        test = map_llm.invoke(str(input)) # invoke map llm to interpret response
-        if test.coordinates and test.map: # coordinates should be a list of coordinates and map should be true
-            # using folium map
-            m = folium.Map(location=test.coordinates[0], zoom_start=10) # create map and center point
-            for coord in test.coordinates: 
-                folium.Marker(location=coord).add_to(m) # add each point to the map
-            folium_static(m) # display map to the screen
-            return "Map displayed successfully."
-        else: # return that there were no coordinates to display if coordinates is empty
-            return "No coordinates to display."
+
+    # function to display points to a map
+    def display_map(input, filename):
+        # same idea as code executor, just parses the packages and code
+
+        
+        # define file path for db
+        container_file_path = '/your_db.db'
+
+        # define img path
+        print(filename)
+        map_path = filename
+
+        # get db content in bytes
+        db_content = get_database_content(db_path)
+        print(input)
+        packages = parse_packages(input)
+        print("Packages Using Parser: ",packages)
+        sandbox = AICodeSandbox(packages=packages)
+
+        
+        try:
+            # write the db to the sandbox
+            sandbox.write_file(container_file_path, db_content)
+
+            # run the code that was input by agent
+            result = sandbox.run_code(input)
+
+            print(result)
+
+            # read the file from the sandbox
+            map_content = sandbox.read_file(map_path)
+
+            # Display the HTML content in Streamlit
+            st.components.v1.html(str(map_content), height=600, scrolling=True)
+
+            # make unique filename
+            new_filename = get_unique_filename(filename)
+
+            # create message with the map and file
+            st.session_state.messages.append({"role": "set", "content": "set", "image": None, "file_data": None, "filename": new_filename, "html": str(map_content)})
+            # create button to download map
+            st.download_button(
+                label=f"Download {new_filename}",
+                data=str(map_content),
+                file_name=new_filename,
+                mime='text/html'
+            )
+        finally:
+            sandbox.close() # close the sandbox
+
+        return input, result # return code and what the code printed
 
 
     # define tool that agent can use to map
     map_tool = StructuredTool.from_function(
         func=display_map,
         name="map_tool",
-        description="Use this tool when your query outputs coordinates. \
-            Inputs to map tool should be a list of coordinates in the format (latitidue, longitude), (latitidue, longitude)...",
+        description="Use this tool when the code saves a html file. Input the filename and the code to be run.",
     )
 
-    # function to plot a bar graph
-    def plot_graph(input):
-        graph_llm = create_graph_llm() # create graph llm to interpret data
-        output = graph_llm.invoke(str(input))
-        if output.graph: # if llm believes this can be graphed
-            df = pd.DataFrame({output.x_axis: output.x_values, output.y_axis: output.y_values})  # define a df using x and y axis
-            st.write(f"## {output.plot_title}") # write the title
-            st.bar_chart(data=df, x=output.x_axis, y=output.y_axis) # create the chart with corresponding data, x axis and y axis
-            st.write(f"### Description") # write the description of the graph
-            # st.write(output.description)
-            return "Graph created successfully."
-        else:
-            st.write("This output does not need to be graphed.")
-            return "This output does not need to be graphed."
+# REPORT TOOL is commented out
+
+    # function to generate report
+    # def report_gen(info):
+    #     llm = ChatOpenAI(model="gpt-4o-mini")
+    #     # prompt to help llm generate queries for us
+    #     QUERY_PROMPT = """You are a MoDOT employee that is focused on data in Missouri.
+    #                 Your job is to generate an informative and reliable report. 
+    #                 You will be given the user query, and you must generate a list of search queries that will gather 
+    #                 any relevant information. Only generate 3 queries max."""
+
+    #     # use llm to generate queries t get a more focused search
+    #     queries = llm.with_structured_output(Queries).invoke([
+    #         SystemMessage(content=QUERY_PROMPT),
+    #         HumanMessage(info)
+    #     ])
+
+    #     # use tavily to find outside info on internet
+    #     tavily = TavilyClient()
+    #     all_responses = []
+
+    #     # invoke tavily using each of the queries we generated (max of 3)
+    #     for query in queries.queries:
+    #         # print("query: ", query)
+    #         response = tavily.search(query=query, max_results=1)
+            
+    #         # apped results to a list that keeps track of all results
+    #         for r in response['results']:
+    #             all_responses.append(r)
+    #             # all_responses.append(r['content'])
+    #             # print(r['content'])
+    #             # print(r)
+
+
+    #     # use llm to then summarize our list of all results
+    #     temp = """You are a MoDOT employee that is focused on data in Missouri.
+    #         You just searched for data and here are the search results:\n
+    #         {compiled_info}\n
+    #         Please compile this information into a formal concise summary.
+    #         Here is the user's input for context:\n
+    #         {info}\n
+    #         Use the URLs given to cite your sources."""
+
+    #     prompt = temp.format(compiled_info=all_responses, info=info)
+
+    #     response = llm.invoke(prompt)
+        
+    #     # return the summarized info as a report which the agent will use to make a report about the given info
+    #     return response.content
+
+
+    # # tool that generares the report
+    # report_tool = StructuredTool.from_function(
+    #     func=report_gen,
+    #     name="report_tool",
+    #     description="Use this tool to generate a report. Input the user query into this tool. \
+    #         This tool will retrieve multiple responses and summarize them for you. \
+    #             Do not make any changes to the report, display them directly to the user."
+    # )
+
+    # function to returns database as bytes to be copied into sandbox
+    def get_database_content(file_path):
+        with open(file_path, 'rb') as file:
+            return file.read()
+    
+    # function that creates a sandox to execute code generated by agent
+    # input is the code that was generated
+    def code_exec(input):
+
+
+        print("Input: ",input)
+
+        # define the file path to be used
+        container_file_path = '/your_db.db'
+
+        # get db content as bytes
+        db_content = get_database_content(db_path)
+
+        print(input)
+
+        # create sandbox environment, making sure to pass in the list of packages that need to be installed for us to run the code
+        packages = parse_packages(input)
+        print("Using Parser: ",packages)
+        sandbox = AICodeSandbox(packages=packages)
+
+        
+        try:
+            # write the db file to the sandbox using'your_db.db' and bytes of db files
+            sandbox.write_file(container_file_path, db_content)
+
+            # run the code that was input
+            result = sandbox.run_code(input)
+
+            print(result)
+        finally:
+            # make sure the close sandbox to clean up resources
+            sandbox.close()
+
+        # return code that was used and the result that was printed by sandbox
+        return input, result
+
+    # tool to execute the code
+    code_executor = StructuredTool.from_function(
+        func=code_exec,
+        name="code_executor",
+        description="Use this tool to run code that does not save a file. The code should print the output. Input the code into this tool to be executed."
+    )
+
+    
+    # function used to run code and display a graph
+    def new_graph_func(input, filename):
+        # same idea as code executor, just parses the packages and code
+
+        
+        # define file path for db
+        container_file_path = '/your_db.db'
+
+        # define img path
+        img_path = filename
+
+        # get db content in bytes
+        db_content = get_database_content(db_path)
+        print(input)
+        packages = parse_packages(input)
+        print("Using Parser: ",packages)
+        sandbox = AICodeSandbox(packages=packages)
+
+
+        try:
+            # write the db to the sandbox
+            sandbox.write_file(container_file_path, db_content)
+
+            # run the code that was input by agent
+            result = sandbox.run_code(input)
+
+            print(result)
+
+            # read the file from the sandbox
+            plot_image = sandbox.read_file(img_path)
 
             
-    # tool agent can use to create a bar graph
+            img = Image.open(BytesIO(plot_image))
+            st.session_state.messages.append({"role": "set", "content": "set", "image": img, "file_data": None, "filename": None, "html": None}) # create new message with image, the role and content will be set later
+            st.image(img) # display image
+        finally:
+            sandbox.close() # close the sandbox
+
+        return input, result # return code and what the code printed
+
+    # graphing tool that llm has access to
     graph_tool = StructuredTool.from_function(
-        func=plot_graph,
+        func=new_graph_func,
         name="graph_tool",
-        description="Use this tool when the user asks you to graph something. \
-            Inputs to graph tool should be string from agent, including data about \
-            graph as well as a short description of the data. Make sure you create the graph\
-                  at a zoom fator to where the user can see the differences in values",
+        description="Use this tool when the code saves a png image. Input code to create an image and the file name of the image."
     )
 
 
-    def tti_calculator(query,batch_size=200):
+    # function to save data to csv file and allow users to download it
+    def csv_func(input, filename):
+        # same idea as other functions to parse packages and code
+
+        # define path for db in sandbox
+        container_file_path = '/your_db.db'
+
+        # put db content into bytes
+        db_content = get_database_content(db_path)
+        print(input)
+        packages = parse_packages(input)
+        print("Using Parser: ",packages)
+        sandbox = AICodeSandbox(packages=packages)
+
+
         try:
+            # write the db file to the sandbox
+            sandbox.write_file(container_file_path, db_content)
 
-            # code to use batching is in comments
+            # run the code in the sandbox
+            result = sandbox.run_code(input)
 
+            print(result)
 
-            # conn = sqlite3.connect(db_path)
-            # offset = 0
-            # dfs = []
-            # while True:
-            #     batch_query = f"{query} LIMIT {batch_size} OFFSET {offset}"
-            #     df_batch = pd.read_sql_query(batch_query, conn)
-            #     if df_batch.empty:
-            #         break
-            #     dfs.append(df_batch)
-            #     offset += batch_size
-            # conn.close()
-            df = pd.read_sql_query(query, conn)
-            # result_df = pd.concat(dfs, ignore_index=True)
-            result_df_edit = prep_data(df)
-            total_df = calculate_arterial(result_df_edit)
-            aggregated_df = total_df.groupby(['tmc', 'link', 'month']).agg({
-                        "TTI_mean": "mean"
-                    }).reset_index()
-            yearly_averages = aggregated_df[['TTI_mean']].mean(skipna=True)
+            # read csv from sandbox
+            data = sandbox.read_file(filename)
 
-            return "Successful Query", yearly_averages
-        
-        except sqlite3.Error as e:
-            return f"SQL query failed with error: {e} Please use sql_db_schema and then rewrite the query and try again using tti_calculator!"
-        except Exception as e:
-            return f"An unexpected error occurred: {e} Please rewrite sql_db_schema and then the query and try again using tti_calculator!"
+            # prepare csv data for inputting the values into the button
+            csv_data = io.StringIO()
+            csv_writer = csv.writer(csv_data)
+            csv_writer.writerows(data)
+            csv_data.seek(0) 
 
-    tti_tool = StructuredTool.from_function(
-        func=tti_calculator,
-        name="tti_tool",
-        description="Use this tool to calculate the Time Travel Index or TTI. The user will ask you to calculate TTI, \
-            so you will generate the correct query and input it into this tool."
-    )
+ 
+            # create button to download csv 
+            new_filename = get_unique_filename(filename)
 
 
-
-
-
-
-
-
-
-    def speed_index_calculator(query,batch_size=1000):
-        try:
-
-
-            # code to use batching is in comments
-            
-            # conn = sqlite3.connect(db_path)
-            # offset = 0
-            # dfs = []
-            # while True:
-            #     batch_query = f"{query} LIMIT {batch_size} OFFSET {offset}"
-            #     df_batch = pd.read_sql_query(batch_query, conn)
-            #     if df_batch.empty:
-            #         break
-            #     dfs.append(df_batch)
-            #     offset += batch_size
-            # conn.close()
-
-            # result_df = pd.concat(dfs, ignore_index=True)
-            df = pd.read_sql_query(query, conn)
-            result_df_edit = prep_data(df)
-            
-            combined_arterials=arterial_spped_index(result_df_edit)
-            aggregated_df = combined_arterials.groupby(['tmc', 'link', 'month']).agg({
-                        "SI": "mean",
-                        "congestion_level": "first"
-                    }).reset_index()
-            yearly_averages = aggregated_df[['SI']].mean(skipna=True)
-            congestion_level = aggregated_df['congestion_level'].iloc[0]
-                
-                # Create a DataFrame for the output
-            output_df = pd.DataFrame({
-                'yearly_averages_SI': [yearly_averages['SI']],
-                'congestion_level': [congestion_level]
-            })
-            return "Successful Query. Here is the SI and congestion level", output_df
-        
-        except sqlite3.Error as e:
-            return f"SQL query failed with error: {e} Please use sql_db_schema and then rewrite the query and try again using speed_index_tool!"
-        except Exception as e:
-            return f"An unexpected error occurred: {e} Please use sql_db_schema and then rewrite the query and try again using speed_index_tool!"
-
-    speed_index_tool = StructuredTool.from_function(
-        func=speed_index_calculator,
-        name="speed_index_tool",
-        description="Use this tool to calculate the speed index. The user will ask you to calculate speed index, \
-            so you will generate the correct query and input it into this tool."
-    )
-
-
-    def congestion_map(query, batch_size=1000):
-        try:
-            # Execute the query and process the data
-            df = pd.read_sql_query(query, conn)
-            result_df_edit = prep_data(df)
-            total_df = calculate_arterial(result_df_edit)
-            
-            # Calculate congestion level for each segment
-            congestion_df = total_df.groupby(['tmc', 'link', 'start_lat', 'end_lat', 'start_long', 'end_long']).agg({
-                "SI": "mean",
-                "congestion_level": "first"
-            }).reset_index()
-
-            # Ensure latitude and longitude are numeric
-            congestion_df[['start_lat', 'end_lat', 'start_long', 'end_long']] = congestion_df[['start_lat', 'end_lat', 'start_long', 'end_long']].apply(pd.to_numeric)
-
-            # Define the area of interest
-            place_name = "St. Louis, Missouri, USA"  # Change as needed
-
-            # Download road network data for the area
-            graph = ox.graph_from_place(place_name, network_type='drive')
-            edges = ox.graph_to_gdfs(graph, nodes=False)
-            nodes = ox.graph_to_gdfs(graph, edges=False)
-
-            # Convert points to GeoDataFrame
-            gdf = gpd.GeoDataFrame(
-                congestion_df,
-                geometry=gpd.points_from_xy(congestion_df.start_long, congestion_df.start_lat),
-                crs='EPSG:4326'
+            st.download_button(
+                label=f"Download {new_filename}",
+                data=csv_data.getvalue(),
+                file_name=new_filename,
+                mime='text/csv'
             )
+            st.session_state.messages.append({"role": "set", "content": "set", "image": None, "file_data": csv_data.getvalue(), "filename": new_filename, "html": None}) # create new message with btn, the role and content will be set later
+        finally:
+            # make sure to close sandbox
+            sandbox.close()
 
-            # Function to get the nearest node in the road network
-            def get_nearest_node(lat, long):
-                return ox.distance.nearest_nodes(graph, long, lat)
+        # return code and printed result of code
+        return input, result
 
-            # Find nearest nodes for start and end points
-            congestion_df['start_node'] = congestion_df.apply(lambda row: get_nearest_node(row.start_lat, row.start_long), axis=1)
-            congestion_df['end_node'] = congestion_df.apply(lambda row: get_nearest_node(row.end_lat, row.end_long), axis=1)
-
-            # Calculate shortest paths between nodes
-            congestion_df['route'] = congestion_df.apply(lambda row: ox.shortest_path(graph, row.start_node, row.end_node, weight='length'), axis=1)
-            congestion_df.dropna(subset=['route'], inplace=True)
-
-            # Define color mapping for congestion levels
-            color_mapping = {
-                "Light": "#83cb22",    # Dark Green
-                "Moderate": "#fcff30", # Dark Yellow
-                "Heavy": "#f9502b",    # Dark Orange
-                "Severe": "#b62000"    # Dark Red
-            }
-
-            # Create a Folium map
-            m = folium.Map(location=[38.77468, -90.41166], zoom_start=10)
-
-            # Add road segments to the map
-            for _, row in congestion_df.iterrows():
-                route_nodes = row['route']
-                route_coords = [(nodes.loc[node].y, nodes.loc[node].x) for node in route_nodes]
-                
-                # Create a tooltip with segment and link numbers, and congestion level
-                tooltip_text = f"Segment Number: {row['tmc']}<br>Link Number: {row['link']}<br>Congestion Level: {row['congestion_level']}"
-                
-                folium.PolyLine(
-                    locations=route_coords,
-                    color=color_mapping[row.congestion_level],
-                    weight=5,
-                    opacity=0.7,
-                    tooltip=folium.Tooltip(tooltip_text, sticky=True)
-                ).add_to(m)
-
-            # Display map to the screen
-            folium_static(m)
-
-            return "Congestion Map displayed successfully"
-        
-        except sqlite3.Error as e:
-            return f"SQL query failed with error: {e} Please use sql_db_schema and then rewrite the query and try again using congestion_map_tool!"
-        except Exception as e:
-            return f"An unexpected error occurred: {e} Please use sql_db_schema and then rewrite the query and try again using congestion_map_tool!"
-
-    congestion_map_tool = StructuredTool.from_function(
-        func=congestion_map,
-        name="congestion_map_tool",
-        description="Use this tool to draw the congestion map. The user will ask you for a congestion map, \
-            so you will generate the correct query and input it into this tool."
+    # csv tool
+    csv_tool = StructuredTool.from_function(
+        func=csv_func,
+        name="csv_tool",
+        description="Use this tool when the code saves a csv file. Input code to create a csv file. Input name for csv file used in code."
     )
 
-    def congestion_level(query, batch_size=1000):
-        try:
-            # Execute the query and process the data
-            df = pd.read_sql_query(query, conn)
-            result_df_edit = prep_data(df)
-            total_df = calculate_arterial(result_df_edit)
-            
-            # Calculate congestion level for each segment
-            congestion_df = total_df.groupby(['tmc', 'link', 'start_lat', 'end_lat', 'start_long', 'end_long']).agg({
-                "congestion_level": "first"
-            }).reset_index()
-
-            return "Successful Query. Here is the congestion level",congestion_df
-        
-        except sqlite3.Error as e:
-            return f"SQL query failed with error: {e} Please use sql_db_schema and then rewrite the query and try again using congestion_level_tool!"
-        except Exception as e:
-            return f"An unexpected error occurred: {e} Please use sql_db_schema and then rewrite the query and try again using congestion_level_tool!"
-
-    congestion_level_tool = StructuredTool.from_function(
-        func=congestion_level,
-        name="congestion_level_tool",
-        description="Use this tool to calculate the congestion_level. The user will ask you for a calculate the congestion level, \
-            so you will generate the correct query and input it into this tool."
-    )
-
-    def roadwork_search (query0, query1):
-        try:
-
-            df = pd.read_sql_query(query1, conn)
-            result_df_edit = prep_data(df)
-            total_df = calculate_arterial(result_df_edit)
-            
-            # Calculate congestion level for each segment
-            congestion_df = total_df.groupby(['tmc', 'link', 'start_lat', 'end_lat', 'start_long', 'end_long']).agg({
-                "congestion_level": "first"
-            }).reset_index()
 
 
-            acc_df = pd.read_sql_query(query0, conn)
-            acc_df['dt'] = pd.to_datetime(acc_df['pub_millis'])
-            acc_df['year'] = acc_df['dt'].dt.year
+    # initalize sql tools including schema, list tables, query checker and query executor
+    db = SQLDatabase.from_uri(f'sqlite:///{db_path}')
+    toolkit = SQLDatabaseToolkit(db=db, llm=ChatOpenAI(model="gpt-4o-mini"))
+    tools = toolkit.get_tools()
+
+    list_tables_tool = next(tool for tool in tools if tool.name == "sql_db_list_tables")
+    get_schema_tool = next(tool for tool in tools if tool.name == "sql_db_schema")
+    query_tool = next(tool for tool in tools if tool.name == "sql_db_query")
+    checker_tool = next(tool for tool in tools if tool.name == "sql_db_query_checker")
 
 
-            # Function to check if an accident is within a certain radius
-            def is_within_range(row, accident_data, radius=1.0):
-                start_point = (row['start_lat'], row['start_long'])
-                end_point = (row['end_lat'], row['end_long'])
-                
-                for _, accident in accident_data.iterrows():
-                    accident_point = (accident['latitude'], accident['longitude'])
-                    if geodesic(start_point, accident_point).miles <= radius or geodesic(end_point, accident_point).miles <= radius:
-                        return True
-                return False
-
-            # Function to get nearby accident info
-            def get_nearby_info(row, accident_data, radius=1.0):
-                start_point = (row['start_lat'], row['start_long'])
-                end_point = (row['end_lat'], row['end_long'])
-                
-                nearby_info = []
-                for _, accident in accident_data.iterrows():
-                    accident_point = (accident['latitude'], accident['longitude'])
-                    if geodesic(start_point, accident_point).miles <= radius or geodesic(end_point, accident_point).miles <= radius:
-                        nearby_info.append(accident['year'])
-                return nearby_info
-
-            # Apply functions to dataframe
-            congestion_df['roadwork_nearby'] = congestion_df.apply(is_within_range, axis=1, accident_data=acc_df)
-            congestion_df['years'] = congestion_df.apply(lambda row: ', '.join(map(str, get_nearby_info(row, acc_df))) if get_nearby_info(row, acc_df) else 'None', axis=1)
-
-            congestion_df['years'] = congestion_df['years'].apply(lambda x: x.split(',')[0].strip())
-
-            return "Successful Query. Here is the congestion level",congestion_df
-        
-        except sqlite3.Error as e:
-            return f"SQL query failed with error: {e} Please use sql_db_schema and then rewrite the query and try again using roadwork_search_tool!"
-        except Exception as e:
-            return f"An unexpected error occurred: {e} Please use sql_db_schema and then rewrite the query and try again using roadwork_search_tool!"
-
-    roadwork_search_tool = StructuredTool.from_function(
-        func=roadwork_search,
-        name="roadwork_search_tool",
-        description="Use this tool to determine if there was roadwork in a given year. The user will ask you for a determine the roadwork, \
-            so you will generate the correct query and input it into this tool."
-    )
 
     # create our list of tools
-    tools = [map_tool, graph_tool, speed_index_tool, tti_tool, congestion_map_tool, congestion_level_tool, roadwork_search_tool]
+    tools = [map_tool, list_tables_tool, get_schema_tool, query_tool, 
+             checker_tool, code_executor, graph_tool, csv_tool]
     
     # return list of tools that agent can use
     return tools
 
 
-def print_output(output):
-    print(f"Title: {output.plot_title}")
-    print(f"X Values: {output.x_values}")
-    print(f"Y Values: {output.y_values}")
-    print(f"X Axis: {output.x_axis}")
-    print(f"Y Axis: {output.y_axis}")
-    print(f"Description: {output.description}")
+# use AST to parse packages
+def parse_packages(code):
+    excluded_packages = {"sqlite3", "json", "os", "math", "datetime", "random", "sys"} # these are installed with python, or they are ones we dont want to use
+    package_set = set()
+
+    def get_top_level_package(package_name): # like for matplotlib.pyplot we just need to download matplotlib
+        return package_name.split('.')[0]
+
+    try:
+        tree = ast.parse(code)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    package_set.add(get_top_level_package(alias.name))
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:  # ensure there is a module
+                    package_set.add(get_top_level_package(node.module))
+    except SyntaxError as e:
+        print(f"Syntax error in code: {e}")
+
+    # exclude the specified packages
+    packages = [pkg for pkg in package_set if pkg not in excluded_packages]
+    
+    return packages
 
 
-# defines a class that classifies output from our sql agent as coordinates or not coordinates, we use structured output to easily identify our cases
-class Map(BaseModel):
-    # """Take the input coordinates and translate it into a list of coordinate pairs in the format: [(21.21323, -83.43232), (43.5435, 54.2344)...] as an example.""" # instructions for llm
-    map: bool = Field(description="False if there are no coordinates in the input. True if there are coordinates in the input.") # true if there are coordinates, false if not
-    coordinates: Optional[List[Tuple]] = Field(description="List of coordinate pairs. If there are no coordinates, coordinates will be None.")
 
 
-# class that allows us to define variables for our graph
-class Graph(BaseModel):
-    """Use data from agent to map values to correct fields."""
-    graph: bool = Field(description="True if this output should be graphed. False if not.")
-    x_values: List[Any] = Field(description="X-axis values for the graph.")
-    y_values: List[Any] = Field(description="Y-axis values for the graph.")
-    plot_title: str = Field(description="Title for the graph.")
-    x_axis: str = Field(description="Label for the X-axis.")
-    y_axis: str = Field(description="Label for the Y-axis.")
-    description: str = Field(description="You are a transportation engineer who is giving a high level, informative description of the data in the graph.")
+# class Queries(BaseModel):
+#     queries: List[str]
 
 
 
-# function that creates graph llm and returns it
-def create_graph_llm():
-    llm=ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
-    graph_llm = llm.with_structured_output(Graph)
-    return graph_llm
-
-# function that creates map llm and returns it
-def create_map_llm():
-    llm=ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
-    map_llm = llm.with_structured_output(Map)
-    return map_llm
