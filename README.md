@@ -74,8 +74,10 @@ Databases are opened in Read-Only mode, and CSV files and API links are queried 
 
 ## Demonstration
 
-#### Query Distribution of Accidents in Different Light Conditions
-https://github.com/user-attachments/assets/85f463de-c845-4940-bb90-acabd096f3a2
+#### SQL Schema and Simple Query Execution
+https://github.com/user-attachments/assets/c53f170b-acfb-441a-b7ac-178ab533c6c0
+
+
 
 #### Query Accident Distribution of Days of the Week
 https://github.com/user-attachments/assets/e9a02aba-3f80-42a2-b2d1-17ce1aa99b41
