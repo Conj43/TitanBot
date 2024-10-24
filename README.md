@@ -84,8 +84,10 @@ https://github.com/user-attachments/assets/38e6dc77-753e-4957-b88b-1d7939f43a21
 
 
 
-#### Query Travel Time Index 
-https://github.com/user-attachments/assets/8e263773-01d6-45d9-9bff-3938ca6ed70f
+#### Accident Map Demo
+https://github.com/user-attachments/assets/8389dab2-d162-4f54-84e8-e25c1355d7bd
+
+
 
 #### Query Congestion Level and Road Works
 
