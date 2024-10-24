@@ -36,12 +36,17 @@ pip install -r requirements.txt
 
 ## Configure OpenAI API Key
 #### Windows
+##### Command Prompt
 ```
-set OPENAI_API_KEY='your-openai-api-key'
+set OPENAI_API_KEY=your-openai-api-key
+```
+##### PowerShell
+```
+$env:OPENAI_API_KEY="your-openai-api-key"
 ```
 #### macOS/Linux
 ```
-export OPENAI_API_KEY='your-openai-api-key'
+export OPENAI_API_KEY=your-openai-api-key
 ```
 
 ## Deactivate and Reactivate your Virtual Environment
