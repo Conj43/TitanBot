@@ -89,11 +89,10 @@ https://github.com/user-attachments/assets/8389dab2-d162-4f54-84e8-e25c1355d7bd
 
 
 
-#### Query Congestion Level and Road Works
+#### Plot Displaying Average Speed by Hour of the Day
+https://github.com/user-attachments/assets/fa1d80a5-33ef-46d5-a2dd-399d797ee0a4
 
 
-
-https://github.com/user-attachments/assets/2167b51d-ed2e-4139-9ad3-e433975f2ca2
 
 
 
