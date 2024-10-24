@@ -13,7 +13,7 @@ from io import BytesIO
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_openai import ChatOpenAI
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic.v1 import BaseModel
 from langchain.tools import StructuredTool
 from langchain_core.messages import SystemMessage, HumanMessage
 
