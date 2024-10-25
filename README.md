@@ -85,6 +85,15 @@ You'll need to upload a database in order to chat with TitanBot. You may use a S
 Databases are opened in Read-Only mode, and CSV files and API links are queried by creating temporary SQLite databases, so no need to worry about data corruption.
 
 
+- Make sure Docker is running, you can check by running ```docker info``` in your terminal
+- Check to see if you have Python downloaded by running ```python --version``` or ```python3 --version```
+- Double check your OPENAI API KEY is set correctly (run one of the following depending on your OS and it should print your api key)
+- ```echo %OPENAI_API_KEY%``` on Windows (Command Prompt)
+-  ```$env:OPENAI_API_KEY``` on Windows (PowerShell)
+-  ```echo $OPENAI_API_KEY``` on Linux/macOS
+  
+
+
 
 
 
