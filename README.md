@@ -13,6 +13,8 @@ Make sure you have:
 ## Clone Repository
 ```
 git clone https://github.com/Conj43/TitanBot.git
+```
+```
 cd TitanBot/'TitanBot Code'
 ```
 ## Create and Activate a Virtual Environment
@@ -20,11 +22,15 @@ cd TitanBot/'TitanBot Code'
 #### Windows
 ```
 python -m venv venv
+```
+```
 venv\Scripts\activate
 ```
 #### macOS/Linux
 ```
 python -m venv venv
+```
+```
 source venv/bin/activate
 ```
 
@@ -53,11 +59,15 @@ export OPENAI_API_KEY=your-openai-api-key
 #### Windows
 ```
 deactivate
+```
+```
 venv\Scripts\activate
 ```
 #### macOS/Linux
 ```
 deactivate
+```
+```
 source venv/bin/activate
 ```
 
